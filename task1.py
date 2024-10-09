@@ -33,8 +33,13 @@ def decrypt(key: bytes, ciphertext: bytes, iv: bytes, block_size: int) -> str:
 # y_a: Alice's private key
 # y_b: Bob's private key
 def diffie_hellman_key_exchange(q: int, alpha: int, y_a: int, y_b: int) -> bytes:
+    # first party calculates the public key using the first party's private key
     public_key = pow(alpha, y_a, q)
+    # Public key is sent to the second party
+    # Second party calculates the shared secret key using the public key and the second party's private key
     secret_key = pow(public_key, y_b, q)
+    # The shared secret key is hashed using SHA-256 to get a 128-bit key
+    # Determine the number of bytes required to represent the secret key to prevent OverflowError
     key_length = (secret_key.bit_length() + 7) // 8
     return SHA256.new(secret_key.to_bytes(key_length)).digest()[:16]
 
