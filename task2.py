@@ -33,7 +33,7 @@ def decrypt(key: bytes, ciphertext: bytes, iv: bytes, block_size: int) -> str:
     return encoded_text.decode()
 
 
-def diffie_hellman_key_exchange(
+def diffie_hellman_key_exchange_mitm(
     q: int, alpha: int, sender_private_key: int, reciever_private_key: int
 ) -> bytes:
     """
@@ -44,13 +44,9 @@ def diffie_hellman_key_exchange(
     :param sender_private_key: The private key of the first party
     :param reciever_private_key: The private key of the second party
     """
-    # first party calculates the public key using the first party's private key
-    public_key = pow(alpha, sender_private_key, q)
-    # Public key is sent to the second party
-    # Second party calculates the shared secret key using the public key and the second party's private key
+    public_key = q  # public key intercepted by adversary
+    # intercepted key forwarded to reciever as public key
     secret_key = pow(public_key, reciever_private_key, q)
-    # The shared secret key is hashed using SHA-256 to get a 128-bit key
-    # Determine the number of bytes required to represent the secret key to prevent OverflowError
     key_length = (secret_key.bit_length() + 7) // 8
     return SHA256.new(secret_key.to_bytes(key_length)).digest()[:16]
 
@@ -67,12 +63,15 @@ def main() -> None:
     # Alice and Bob generate their private keys
     x_a = randint(1, q - 1)
     x_b = randint(1, q - 1)
+    x_c = q  # private key of the adversary
 
     # Alice and Bob generate their shared secret key
-    key1 = diffie_hellman_key_exchange(q, alpha, x_a, x_b)
-    key2 = diffie_hellman_key_exchange(q, alpha, x_b, x_a)
+    key1 = diffie_hellman_key_exchange_mitm(q, alpha, x_a, x_c)
+    key2 = diffie_hellman_key_exchange_mitm(q, alpha, x_b, x_c)
+    key3 = diffie_hellman_key_exchange_mitm(q, alpha, x_b, x_c)
     print(f"Alice's symmetric key: {key1}")
     print(f"Bob's symmetric key: {key2}")
+    print(f"Mallory's symmetric key: {key3}")
 
     # Alice and Bob encrypt their messages
     iv = get_random_bytes(16)
@@ -84,9 +83,11 @@ def main() -> None:
     # Alice and Bob decrypt the each other's ciphertexts
     plaintext1 = decrypt(key1, ciphertext2, iv, AES.block_size)
     plaintext2 = decrypt(key2, ciphertext1, iv, AES.block_size)
+    plaintext3 = decrypt(key3, ciphertext1, iv, AES.block_size)
 
     print(f"Alice received: {plaintext1}")
     print(f"Bob received: {plaintext2}")
+    print(f"Mallory received: {plaintext3}")
 
 
 if __name__ == "__main__":
