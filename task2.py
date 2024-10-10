@@ -66,9 +66,9 @@ def main() -> None:
     x_c = q  # private key of the adversary
 
     # Alice and Bob generate their shared secret key
-    key1 = diffie_hellman_key_exchange_mitm(q, alpha, x_a, x_c)
-    key2 = diffie_hellman_key_exchange_mitm(q, alpha, x_b, x_c)
-    key3 = diffie_hellman_key_exchange_mitm(q, alpha, x_b, x_c)
+    key1 = diffie_hellman_key_exchange_mitm(q, alpha, x_a, x_b)
+    key2 = diffie_hellman_key_exchange_mitm(q, alpha, x_b, x_a)
+    key3 = diffie_hellman_key_exchange_mitm(q, alpha, x_c, x_c)  # adversary's key
     print(f"Alice's symmetric key: {key1}")
     print(f"Bob's symmetric key: {key2}")
     print(f"Mallory's symmetric key: {key3}")
@@ -83,11 +83,12 @@ def main() -> None:
     # Alice and Bob decrypt the each other's ciphertexts
     plaintext1 = decrypt(key1, ciphertext2, iv, AES.block_size)
     plaintext2 = decrypt(key2, ciphertext1, iv, AES.block_size)
-    plaintext3 = decrypt(key3, ciphertext1, iv, AES.block_size)
+    plaintext3 = decrypt(key3, ciphertext2, iv, AES.block_size)
+    plaintext4 = decrypt(key3, ciphertext1, iv, AES.block_size)
 
     print(f"Alice received: {plaintext1}")
     print(f"Bob received: {plaintext2}")
-    print(f"Mallory received: {plaintext3}")
+    print(f"Mallory received: {plaintext3} and {plaintext4}")
 
 
 if __name__ == "__main__":
